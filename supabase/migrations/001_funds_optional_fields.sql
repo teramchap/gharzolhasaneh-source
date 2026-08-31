@@ -1,0 +1,1 @@
+cat /home/claude/gharzolhasaneh/supabase/migrations/001_funds_optional_fields.sql
