@@ -1,0 +1,40 @@
+@import url('https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand palette — richer violet/magenta purple (less blue-leaning) */
+  --color-brand-purple-950: #3B0764;
+  --color-brand-purple-900: #581C87;
+  --color-brand-purple-800: #6B21A8;
+  --color-brand-purple-700: #7E22CE;
+  --color-brand-purple-100: #F3E8FF;
+
+  --color-brand-yellow-400: #FACC15;
+  --color-brand-yellow-300: #FDE047;
+  --color-brand-yellow-200: #FEF3A0;
+
+  --color-brand-pink-600: #DB2777;
+  --color-brand-pink-500: #EC4899;
+
+  --color-brand-green-600: #16A34A;
+  --color-brand-green-100: #DCFCE7;
+
+  --color-brand-red-600: #DC2626;
+  --color-brand-red-100: #FEE2E2;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-brand-purple-900);
+}
+
+/* Persian numeral tabular alignment for amounts */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
