@@ -58,7 +58,7 @@ export async function getFundReport(fundId) {
       }
 
       const remaining = due - paid
-      if (remaining > 0) {
+      if (remaining > 0 && paid > 0) {
         // مسئول واقعی این قسط: کسی که سهم به او منتقل شده، وگرنه صاحب اصلی سهم
         const responsible = inst.payer_user_id ? inst.payer : owner
         incompletePayments.push({
