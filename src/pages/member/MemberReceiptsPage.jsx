@@ -28,10 +28,6 @@ export default function MemberReceiptsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id])
 
-  // Not-yet-settled installments, excluding ones already awaiting a
-  // deduction decision (those show their own status instead). Accounts
-  // for amounts already submitted but still pending admin review/transfer,
-  // so the leftover portion of a partial payment stays selectable.
   const unsettled = installments.filter((i) => {
     if (i.deducted || i.deduction_requested) return false
     const pending = getPendingAmount(i)
@@ -39,7 +35,6 @@ export default function MemberReceiptsPage() {
     return remaining > 0
   })
 
-  // Payable by normal receipt: same as above, split out below for the form.
   const eligible = unsettled
 
   const pendingDeductions = installments.filter((i) => i.deduction_requested && !i.deducted)
