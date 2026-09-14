@@ -42,7 +42,7 @@ export async function getFundReport(fundId) {
   let totalPaid = 0
   let closedMonths = 0
   const goodwillMap = {}
-  const memberMap = {} // userId -> { userId, name, due, paid }
+  const incompletePayments = [] // یک ردیف به‌ازای هر سهم در هر ماهِ ناقص‌پرداخت‌شده
 
   for (const m of months ?? []) {
     if (m.is_completed) closedMonths++
@@ -57,14 +57,17 @@ export async function getFundReport(fundId) {
         goodwillMap[owner.id].scores.push(Number(inst.goodwill_score))
       }
 
-      // مسئول واقعی این قسط: کسی که سهم به او منتقل شده، وگرنه صاحب اصلی سهم
-      const responsible = inst.payer_user_id ? inst.payer : owner
-      if (responsible) {
-        if (!memberMap[responsible.id]) {
-          memberMap[responsible.id] = { userId: responsible.id, name: responsible.full_name, due: 0, paid: 0 }
-        }
-        memberMap[responsible.id].due += due
-        memberMap[responsible.id].paid += paid
+      const remaining = due - paid
+      if (remaining > 0) {
+        // مسئول واقعی این قسط: کسی که سهم به او منتقل شده، وگرنه صاحب اصلی سهم
+        const responsible = inst.payer_user_id ? inst.payer : owner
+        incompletePayments.push({
+          month: m.jalali_month,
+          name: responsible?.full_name ?? '—',
+          due,
+          paid,
+          remaining,
+        })
       }
     }
   }
@@ -76,9 +79,7 @@ export async function getFundReport(fundId) {
     .map((g) => ({ name: g.name, avg: g.scores.reduce((a, b) => a + b, 0) / g.scores.length }))
     .sort((a, b) => b.avg - a.avg)
 
-  const memberPayments = Object.values(memberMap)
-    .map((m) => ({ ...m, remaining: m.due - m.paid }))
-    .sort((a, b) => b.remaining - a.remaining)
+  incompletePayments.sort((a, b) => (a.month < b.month ? -1 : a.month > b.month ? 1 : b.remaining - a.remaining))
 
   return {
     months: months ?? [],
@@ -88,6 +89,6 @@ export async function getFundReport(fundId) {
     closedMonths,
     totalMonths,
     goodwillList,
-    memberPayments,
+    incompletePayments,
   }
 }
