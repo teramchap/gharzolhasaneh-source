@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { getMyActiveWinners } from '../../lib/winners'
 import { getAnnouncement, getAnnouncementImageUrl } from '../../lib/announcement'
 import { jalaliMonthLabel } from '../../lib/format'
+import { getMyNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '../../lib/notifications'
 
 const MEMBER_STAGE_MESSAGE = {
   awaiting_guarantee_type: 'در انتظار بررسی توسط مدیر',
@@ -25,26 +26,79 @@ const cards = [
 
 export default function MemberDashboard() {
   const { profile, logout } = useAuth()
+  const navigate = useNavigate()
   const [activeWinners, setActiveWinners] = useState([])
   const [announcement, setAnnouncement] = useState(null)
+  const [notifications, setNotifications] = useState([])
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [showNotifications, setShowNotifications] = useState(false)
 
   useEffect(() => {
     if (profile?.id) {
       getMyActiveWinners(profile.id).then(({ data }) => setActiveWinners(data ?? []))
+      getUnreadCount(profile.id).then(setUnreadCount)
     }
     getAnnouncement().then(({ data }) => setAnnouncement(data))
   }, [profile?.id])
 
+  async function openNotifications() {
+    setShowNotifications((prev) => !prev)
+    if (!showNotifications && profile?.id) {
+      const { data } = await getMyNotifications(profile.id)
+      setNotifications(data ?? [])
+      if (unreadCount > 0) {
+        await markAllNotificationsRead(profile.id)
+        setUnreadCount(0)
+      }
+    }
+  }
+
+  async function handleNotificationClick(n) {
+    if (!n.is_read) await markNotificationRead(n.id)
+    setShowNotifications(false)
+    if (n.action_url) navigate(n.action_url)
+  }
+
   return (
     <div className="min-h-dvh bg-brand-purple-100">
-      <header className="flex items-center justify-between bg-brand-purple-900 px-4 py-4 text-white">
+      <header className="relative flex items-center justify-between bg-brand-purple-900 px-4 py-4 text-white">
         <div className="flex items-center gap-2">
           <img src="/logo.png" alt="لوگو" className="h-9 w-9 rounded-lg" />
           <span className="font-bold">صندوق قرض‌الحسنه</span>
         </div>
-        <button onClick={logout} className="text-sm text-white/80 hover:text-white">
-          خروج
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={openNotifications} className="relative text-white/80 hover:text-white" aria-label="اعلان‌ها">
+            <BellIcon className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <span className="tnum absolute -left-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-red-600 px-1 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+          <button onClick={logout} className="text-sm text-white/80 hover:text-white">
+            خروج
+          </button>
+        </div>
+
+        {showNotifications && (
+          <div className="absolute left-4 top-14 z-20 w-72 overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-black/5">
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <p className="p-4 text-center text-xs text-brand-purple-900/50">اعلانی وجود ندارد.</p>
+              ) : (
+                notifications.map((n) => (
+                  <button
+                    key={n.id}
+                    onClick={() => handleNotificationClick(n)}
+                    className="block w-full border-b border-gray-100 px-3 py-2.5 text-right last:border-b-0 hover:bg-brand-purple-100"
+                  >
+                    <p className="text-xs text-brand-purple-900">{n.message}</p>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </header>
       <main className="p-4">
         <h1 className="text-base font-bold text-brand-purple-900">
@@ -92,6 +146,15 @@ export default function MemberDashboard() {
         )}
       </main>
     </div>
+  )
+}
+
+function BellIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 01-3.46 0" />
+    </svg>
   )
 }
 
