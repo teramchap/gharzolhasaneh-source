@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { jalaliOrdinal } from './format'
+import { createNotification } from './notifications'
 
 // Makes sure every existing month of a share's fund has a matching
 // installment row (due amount). Safe to call repeatedly — only inserts
@@ -175,7 +176,7 @@ export async function approveReceipt(receiptId, cardLast4) {
 export async function rejectReceipt(receiptId, reason) {
   const { data: receipt } = await supabase
     .from('receipts')
-    .select('id, receipt_installments(installment_id)')
+    .select('id, user_id, receipt_installments(installment_id)')
     .eq('id', receiptId)
     .single()
 
@@ -187,6 +188,15 @@ export async function rejectReceipt(receiptId, reason) {
 
   const instIds = (receipt?.receipt_installments ?? []).map((ri) => ri.installment_id)
   if (instIds.length) await supabase.from('installments').update({ status: null }).in('id', instIds)
+
+  if (receipt?.user_id) {
+    await createNotification(
+      receipt.user_id,
+      reason ? `فیش شما رد شد. دلیل: ${reason}` : 'فیش شما توسط مدیر رد شد.',
+      '/member/payment-history'
+    )
+  }
+
   return { error: null }
 }
 
@@ -225,4 +235,4 @@ export async function finalConfirmReceipt(receiptId) {
       .eq('id', ri.installment_id)
   }
   return { error: null }
-}
+    }
