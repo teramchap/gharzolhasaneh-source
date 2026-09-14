@@ -135,21 +135,19 @@ export default function ReportsPage() {
             </div>
 
             <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-purple-900/5">
-              <p className="mb-2 text-sm font-bold text-brand-purple-900">پرداخت‌های اعضا</p>
-              {report.memberPayments.length === 0 && (
-                <p className="text-xs text-brand-purple-900/50">هنوز قسطی برای این صندوق ثبت نشده است.</p>
+              <p className="mb-2 text-sm font-bold text-brand-purple-900">پرداخت‌های ناقص</p>
+              {report.incompletePayments.length === 0 && (
+                <p className="text-xs text-brand-purple-900/50">همه‌ی اقساط تا این لحظه کامل پرداخت شده‌اند. 🎉</p>
               )}
               <div className="space-y-2">
-                {report.memberPayments.map((mp) => (
-                  <div key={mp.userId} className="rounded-xl border border-gray-100 p-2.5">
+                {report.incompletePayments.map((ip, i) => (
+                  <div key={i} className="rounded-xl border border-gray-100 p-2.5">
                     <div className="flex items-center justify-between text-sm">
-                      <span className="font-semibold text-brand-purple-900">{mp.name}</span>
-                      <span className={'tnum text-xs font-bold ' + (mp.remaining > 0 ? 'text-brand-red-600' : 'text-brand-green-600')}>
-                        {mp.remaining > 0 ? `${formatAmount(mp.remaining)} ناقص` : 'کامل'}
-                      </span>
+                      <span className="font-semibold text-brand-purple-900">{ip.name}</span>
+                      <span className="text-xs text-brand-purple-900/60">{jalaliMonthLabel(ip.month)}</span>
                     </div>
-                    <p className="tnum mt-0.5 text-xs text-brand-purple-900/60">
-                      پرداخت‌شده: {formatAmount(mp.paid)} از {formatAmount(mp.due)}
+                    <p className="tnum mt-0.5 text-xs text-brand-red-600">
+                      {formatAmount(ip.paid)} از {formatAmount(ip.due)} پرداخت شده — {formatAmount(ip.remaining)} باقیمانده
                     </p>
                   </div>
                 ))}
@@ -188,4 +186,4 @@ function BackIcon(props) {
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
-}
+                    }
