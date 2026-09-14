@@ -137,7 +137,7 @@ export default function ReportsPage() {
             <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-purple-900/5">
               <p className="mb-2 text-sm font-bold text-brand-purple-900">پرداخت‌های ناقص</p>
               {report.incompletePayments.length === 0 && (
-                <p className="text-xs text-brand-purple-900/50">همه‌ی اقساط تا این لحظه کامل پرداخت شده‌اند. 🎉</p>
+                <p className="text-xs text-brand-purple-900/50">هیچ پرداخت ناقصی (پرداخت‌شده ولی کامل‌نشده) وجود ندارد.</p>
               )}
               <div className="space-y-2">
                 {report.incompletePayments.map((ip, i) => (
@@ -186,4 +186,4 @@ function BackIcon(props) {
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
-                    }
+}
