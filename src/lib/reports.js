@@ -29,7 +29,11 @@ export async function getFundReport(fundId) {
   const { data: months } = await supabase
     .from('fund_months')
     .select(
-      '*, installments(due_amount, paid_amount, goodwill_score, shares(users!shares_user_id_fkey(id, full_name)))'
+      `*, installments(
+        due_amount, paid_amount, goodwill_score, payer_user_id,
+        shares(user_id, users!shares_user_id_fkey(id, full_name)),
+        payer:users!installments_payer_user_id_fkey(id, full_name)
+      )`
     )
     .eq('fund_id', fundId)
     .order('sequence', { ascending: true })
@@ -38,15 +42,29 @@ export async function getFundReport(fundId) {
   let totalPaid = 0
   let closedMonths = 0
   const goodwillMap = {}
+  const memberMap = {} // userId -> { userId, name, due, paid }
 
   for (const m of months ?? []) {
     if (m.is_completed) closedMonths++
     for (const inst of m.installments ?? []) {
-      totalPaid += Number(inst.paid_amount || 0)
-      const user = inst.shares?.users
-      if (user && inst.goodwill_score !== null && inst.goodwill_score !== undefined) {
-        if (!goodwillMap[user.id]) goodwillMap[user.id] = { name: user.full_name, scores: [] }
-        goodwillMap[user.id].scores.push(Number(inst.goodwill_score))
+      const due = Number(inst.due_amount || 0)
+      const paid = Number(inst.paid_amount || 0)
+      totalPaid += paid
+
+      const owner = inst.shares?.users
+      if (owner && inst.goodwill_score !== null && inst.goodwill_score !== undefined) {
+        if (!goodwillMap[owner.id]) goodwillMap[owner.id] = { name: owner.full_name, scores: [] }
+        goodwillMap[owner.id].scores.push(Number(inst.goodwill_score))
+      }
+
+      // مسئول واقعی این قسط: کسی که سهم به او منتقل شده، وگرنه صاحب اصلی سهم
+      const responsible = inst.payer_user_id ? inst.payer : owner
+      if (responsible) {
+        if (!memberMap[responsible.id]) {
+          memberMap[responsible.id] = { userId: responsible.id, name: responsible.full_name, due: 0, paid: 0 }
+        }
+        memberMap[responsible.id].due += due
+        memberMap[responsible.id].paid += paid
       }
     }
   }
@@ -58,6 +76,10 @@ export async function getFundReport(fundId) {
     .map((g) => ({ name: g.name, avg: g.scores.reduce((a, b) => a + b, 0) / g.scores.length }))
     .sort((a, b) => b.avg - a.avg)
 
+  const memberPayments = Object.values(memberMap)
+    .map((m) => ({ ...m, remaining: m.due - m.paid }))
+    .sort((a, b) => b.remaining - a.remaining)
+
   return {
     months: months ?? [],
     fundTotal,
@@ -66,5 +88,6 @@ export async function getFundReport(fundId) {
     closedMonths,
     totalMonths,
     goodwillList,
+    memberPayments,
   }
 }
