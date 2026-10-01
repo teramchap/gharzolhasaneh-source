@@ -5,7 +5,6 @@ import { countFunds } from '../../lib/funds'
 import { countMembers } from '../../lib/members'
 import { countPendingReceipts } from '../../lib/receipts'
 import { getUnreadCountsForReader } from '../../lib/messages'
-
 export default function AdminDashboard() {
   const { profile, logout } = useAuth()
   const [fundsCount, setFundsCount] = useState(null)
