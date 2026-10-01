@@ -5,7 +5,7 @@ import { getMyActiveWinners } from '../../lib/winners'
 import { getAnnouncement, getAnnouncementImageUrl } from '../../lib/announcement'
 import { jalaliMonthLabel } from '../../lib/format'
 import { getMyNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '../../lib/notifications'
-
+import { getLiveStream } from '../../lib/liveStream'
 const MEMBER_STAGE_MESSAGE = {
   awaiting_guarantee_type: 'در انتظار بررسی توسط مدیر',
   awaiting_documents: 'مدارک ضمانت خود را بارگذاری کنید',
@@ -32,6 +32,7 @@ export default function MemberDashboard() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
+    const [liveStream, setLiveStreamState] = useState(null)
 
   useEffect(() => {
     if (profile?.id) {
@@ -40,6 +41,14 @@ export default function MemberDashboard() {
     }
     getAnnouncement().then(({ data }) => setAnnouncement(data))
   }, [profile?.id])
+  
+  useEffect(() => {
+    getLiveStream().then(({ data }) => setLiveStreamState(data))
+    const interval = setInterval(() => {
+      getLiveStream().then(({ data }) => setLiveStreamState(data))
+    }, 20000)
+    return () => clearInterval(interval)
+  }, [])
 
   async function openNotifications() {
     setShowNotifications((prev) => !prev)
@@ -100,6 +109,15 @@ export default function MemberDashboard() {
           </div>
         )}
       </header>
+      
+      {liveStream?.is_active && liveStream?.url && (
+        <div className="m-4 overflow-hidden rounded-2xl ring-2 ring-brand-red-600">
+          <div className="flex items-center gap-1.5 bg-brand-red-600 px-3 py-1.5 text-xs font-bold text-white">
+            🔴 پخش زنده‌ی قرعه‌کشی
+          </div>
+          <iframe src={liveStream.url} allowFullScreen className="aspect-video w-full" title="پخش زنده" />
+        </div>
+      )}
       <main className="p-4">
         <h1 className="text-base font-bold text-brand-purple-900">
           خوش آمدید{profile?.full_name ? `، ${profile.full_name}` : ''}
