@@ -29,6 +29,7 @@ export default function AdminDashboard() {
     { title: 'فیش‌های پرداخت‌شده', to: '/admin/receipts', count: receiptsCount },
     { title: 'لیست واریزها', to: '/admin/payments' },
     { title: 'یادداشت‌ها', to: '/admin/notes' },
+    { title: 'پخش زنده', to: '/admin/live' },
     { title: 'برندگان', to: '/admin/winners' },
     { title: 'کاربران', to: '/admin/users', count: membersCount },
     { title: 'گزارشات', to: '/admin/reports' },
@@ -142,6 +143,13 @@ function CardIcon({ title, className }) {
       <svg {...common}>
         <path d="M6 3h12v18l-9-4-3 2V3z" />
         <path d="M9 8h6M9 12h4" />
+      </svg>
+    )
+   if (title === 'پخش زنده')
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" />
       </svg>
     )
     if (title === 'کاربران')
