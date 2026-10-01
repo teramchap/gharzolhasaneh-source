@@ -21,6 +21,7 @@ import MemberSharesPage from './pages/member/MemberSharesPage'
 import ChangePasswordPage from './pages/member/ChangePasswordPage'
 import MemberPaymentHistoryPage from './pages/member/MemberPaymentHistoryPage'
 import PaymentsListPage from './pages/admin/PaymentsListPage'
+import NotesPage from './pages/admin/NotesPage'
 
 export default function App() {
   return (
@@ -180,11 +181,19 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
+                    <Route
             path="/admin/payments"
             element={
               <ProtectedRoute role="admin">
                 <PaymentsListPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/notes"
+            element={
+              <ProtectedRoute role="admin">
+                <NotesPage />
               </ProtectedRoute>
             }
           />
