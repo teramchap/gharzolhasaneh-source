@@ -22,7 +22,7 @@ import ChangePasswordPage from './pages/member/ChangePasswordPage'
 import MemberPaymentHistoryPage from './pages/member/MemberPaymentHistoryPage'
 import PaymentsListPage from './pages/admin/PaymentsListPage'
 import NotesPage from './pages/admin/NotesPage'
-
+import LiveStreamPage from './pages/admin/LiveStreamPage'
 export default function App() {
   return (
     <BrowserRouter>
@@ -195,6 +195,14 @@ export default function App() {
             element={
               <ProtectedRoute role="admin">
                 <NotesPage />
+              </ProtectedRoute>
+            }
+          />
+              <Route
+            path="/admin/live"
+            element={
+              <ProtectedRoute role="admin">
+                <LiveStreamPage />
               </ProtectedRoute>
             }
           />
