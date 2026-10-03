@@ -244,6 +244,9 @@ function ReviewCard({ receipt, onDone }) {
 
 function TransferCard({ receipt, onDone }) {
   const [submitting, setSubmitting] = useState(false)
+  const [showReject, setShowReject] = useState(false)
+  const [rejectReason, setRejectReason] = useState('')
+  const [error, setError] = useState('')
 
   async function handleConfirm() {
     setSubmitting(true)
@@ -252,22 +255,71 @@ function TransferCard({ receipt, onDone }) {
     onDone()
   }
 
+  async function handleReject() {
+    setError('')
+    if (!rejectReason.trim()) return setError('علت رد را بنویسید.')
+    setSubmitting(true)
+    const { error: err } = await rejectReceipt(receipt.id, rejectReason.trim())
+    setSubmitting(false)
+    if (err) return setError('خطا در رد فیش.')
+    onDone()
+  }
+
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-purple-900/5">
-      <div>
-        <p className="font-bold text-brand-purple-900">{receipt.users?.full_name}</p>
-        <p className="text-xs text-brand-purple-900/50" dir="ltr">
-          کارت: ****{receipt.card_last4}
-        </p>
-        <p className="tnum text-sm text-brand-purple-900/70">{formatAmount(receipt.total_amount)} تومان</p>
+    <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-purple-900/5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-bold text-brand-purple-900">{receipt.users?.full_name}</p>
+          <p className="text-xs text-brand-purple-900/50" dir="ltr">
+            کارت: ****{receipt.card_last4}
+          </p>
+          <p className="tnum text-sm text-brand-purple-900/70">{formatAmount(receipt.total_amount)} تومان</p>
+        </div>
+        {!showReject && (
+          <button
+            onClick={handleConfirm}
+            disabled={submitting}
+            className="rounded-lg bg-brand-green-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+          >
+            {submitting ? '…' : 'تایید نهایی'}
+          </button>
+        )}
       </div>
-      <button
-        onClick={handleConfirm}
-        disabled={submitting}
-        className="rounded-lg bg-brand-green-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {submitting ? '…' : 'تایید نهایی'}
-      </button>
+
+      {!showReject ? (
+        <button
+          onClick={() => setShowReject(true)}
+          className="mt-2 w-full rounded-lg border border-brand-red-600 py-2 text-sm font-semibold text-brand-red-600"
+        >
+          رد فیش
+        </button>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <textarea
+            value={rejectReason}
+            onChange={(e) => setRejectReason(e.target.value)}
+            placeholder="علت رد فیش را بنویسید…"
+            rows={2}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brand-purple-700"
+          />
+          {error && <p className="text-xs text-brand-red-600">{error}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowReject(false)}
+              className="flex-1 rounded-lg border border-gray-200 py-2 text-sm font-semibold text-brand-purple-900"
+            >
+              انصراف
+            </button>
+            <button
+              onClick={handleReject}
+              disabled={submitting}
+              className="flex-1 rounded-lg bg-brand-red-600 py-2 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {submitting ? 'در حال ثبت…' : 'ثبت رد فیش'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
