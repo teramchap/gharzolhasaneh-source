@@ -78,6 +78,17 @@ export function getPendingAmount(inst) {
     .reduce((sum, ri) => sum + Number(ri.amount_applied), 0)
 }
 
+// Storage object keys must stay ASCII-safe. Phone camera apps often name
+// photos using the device's locale digits (e.g. Persian/Arabic-Indic
+// numerals on some Samsung phones), which Supabase Storage rejects with a
+// 400 error — silently, since the upload call isn't the one shown an
+// error to the member. We never need the original file name for anything,
+// so we just keep a safe extension and drop the rest.
+function safeFileExtension(filename) {
+  const match = /\.([a-zA-Z0-9]+)$/.exec(filename || '')
+  return match ? match[1].toLowerCase() : 'jpg'
+}
+
 export async function submitReceipt({ userId, totalAmount, images, allocations, hasImage, depositDateJalali, cardLast4 }) {
   const { data: receipt, error } = await supabase
     .from('receipts')
@@ -96,12 +107,21 @@ export async function submitReceipt({ userId, totalAmount, images, allocations, 
   if (error) return { data: null, error }
 
   if (hasImage) {
+    const uploadErrors = []
     for (const file of images) {
-      const path = `${userId}/${receipt.id}/${crypto.randomUUID()}-${file.name}`
+      const ext = safeFileExtension(file.name)
+      const path = `${userId}/${receipt.id}/${crypto.randomUUID()}.${ext}`
       const { error: upErr } = await supabase.storage.from('receipts').upload(path, file)
       if (!upErr) {
         await supabase.from('receipt_images').insert({ receipt_id: receipt.id, storage_path: path })
+      } else {
+        uploadErrors.push(upErr)
       }
+    }
+    // If every single image failed to upload, surface that clearly instead
+    // of silently leaving a receipt with has_image=true and no images.
+    if (uploadErrors.length > 0 && uploadErrors.length === images.length) {
+      return { data: receipt, error: uploadErrors[0] }
     }
   } else {
     // Generate and store the replacement image for a payment submitted
