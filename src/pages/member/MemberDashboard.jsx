@@ -6,6 +6,8 @@ import { getAnnouncement, getAnnouncementImageUrl } from '../../lib/announcement
 import { jalaliMonthLabel } from '../../lib/format'
 import { getMyNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '../../lib/notifications'
 import { getLiveStream } from '../../lib/liveStream'
+import { getMemberUnreadCount } from '../../lib/messages'
+
 const MEMBER_STAGE_MESSAGE = {
   awaiting_guarantee_type: 'در انتظار بررسی توسط مدیر',
   awaiting_documents: 'مدارک ضمانت خود را بارگذاری کنید',
@@ -32,7 +34,8 @@ export default function MemberDashboard() {
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
-    const [liveStream, setLiveStreamState] = useState(null)
+  const [liveStream, setLiveStreamState] = useState(null)
+  const [chatUnread, setChatUnread] = useState(0)
 
   useEffect(() => {
     if (profile?.id) {
@@ -41,7 +44,7 @@ export default function MemberDashboard() {
     }
     getAnnouncement().then(({ data }) => setAnnouncement(data))
   }, [profile?.id])
-  
+
   useEffect(() => {
     getLiveStream().then(({ data }) => setLiveStreamState(data))
     const interval = setInterval(() => {
@@ -49,6 +52,14 @@ export default function MemberDashboard() {
     }, 20000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    if (!profile?.id) return
+    const load = () => getMemberUnreadCount(profile.id).then(setChatUnread)
+    load()
+    const interval = setInterval(load, 20000)
+    return () => clearInterval(interval)
+  }, [profile?.id])
 
   async function openNotifications() {
     setShowNotifications((prev) => !prev)
@@ -109,7 +120,7 @@ export default function MemberDashboard() {
           </div>
         )}
       </header>
-      
+
       {liveStream?.is_active && liveStream?.url && (
         <div className="m-4 overflow-hidden rounded-2xl ring-2 ring-brand-red-600">
           <div className="flex items-center gap-1.5 bg-brand-red-600 px-3 py-1.5 text-xs font-bold text-white">
@@ -144,8 +155,13 @@ export default function MemberDashboard() {
             <Link
               key={c.title}
               to={c.to}
-              className="flex flex-col items-center gap-1.5 rounded-xl bg-white px-2 py-3 text-center shadow-sm ring-1 ring-brand-purple-900/5 transition hover:ring-brand-purple-700"
+              className="relative flex flex-col items-center gap-1.5 rounded-xl bg-white px-2 py-3 text-center shadow-sm ring-1 ring-brand-purple-900/5 transition hover:ring-brand-purple-700"
             >
+              {c.title === 'گفتگو با مدیر' && chatUnread > 0 && (
+                <span className="absolute left-1.5 top-1.5 rounded-full bg-brand-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {chatUnread}
+                </span>
+              )}
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-yellow-300">
                 <CardIcon title={c.title} className="h-4.5 w-4.5 text-brand-purple-900" />
               </span>
