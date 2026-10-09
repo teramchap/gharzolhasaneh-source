@@ -80,3 +80,23 @@ export async function getUnreadCountsForReader(readerId) {
   }
   return counts
 }
+
+// تعداد پیام‌های خوانده‌نشده‌ی مدیر برای یک عضو (فقط گفتگوی خودش)
+export async function getMemberUnreadCount(memberId) {
+  const { data: read } = await supabase
+    .from('thread_reads')
+    .select('last_read_at')
+    .eq('member_id', memberId)
+    .eq('reader_id', memberId)
+    .maybeSingle()
+
+  let query = supabase
+    .from('messages')
+    .select('id', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .neq('sender_id', memberId)
+  if (read?.last_read_at) query = query.gt('created_at', read.last_read_at)
+
+  const { count } = await query
+  return count ?? 0
+}
