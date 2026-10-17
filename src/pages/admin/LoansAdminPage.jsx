@@ -397,7 +397,7 @@ function BlacklistTab({ list, onDone }) {
         <input
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          placeholder="دلیل (اختیاری)"
+          placeholder="دلیل (برای عضو نمایش داده می‌شود)"
           className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-right text-sm outline-none focus:border-brand-purple-700"
         />
         {suggestions.map((m) => (
@@ -585,4 +585,4 @@ function BackIcon(props) {
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
-          }
+}
