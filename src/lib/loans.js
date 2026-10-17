@@ -45,9 +45,14 @@ export function getLoanLetterUrl(path) {
 
 // ---------- Member side ----------
 
-export async function isLoanBlacklisted(userId) {
-  const { data } = await supabase.from('loan_blacklist').select('user_id').eq('user_id', userId).maybeSingle()
-  return !!data
+// اگر عضو در لیست سیاه باشد ردیفش (شامل دلیل) برمی‌گردد، وگرنه null
+export async function getMyLoanBlacklistEntry(userId) {
+  const { data } = await supabase
+    .from('loan_blacklist')
+    .select('user_id, reason')
+    .eq('user_id', userId)
+    .maybeSingle()
+  return data
 }
 
 export async function getMyLoanRequests(userId) {
