@@ -108,7 +108,7 @@ export async function listActiveLoanRequests() {
 export async function getLoanHistory(userId) {
   return supabase
     .from('loan_requests')
-    .select('id, month, status, recipient_full_name, created_at')
+    .select('id, month, status, recipient_full_name, loan_amount, loan_installments, created_at')
     .eq('user_id', userId)
     .in('status', RECEIVED_STATUSES)
     .order('created_at', { ascending: false })
@@ -207,12 +207,14 @@ export async function removeFromLoanBlacklist(userId) {
 }
 
 // ثبت سابقه‌ی دریافت وام برای کسانی که قبل از راه‌اندازی این بخش وام گرفته‌اند
-export async function addPastLoan(userId, month, recipientName) {
+export async function addPastLoan(userId, month, recipientName, amount, installments) {
   return supabase.from('loan_requests').insert({
     user_id: userId,
     month,
     status: 'completed',
     recipient_full_name: recipientName || null,
+    loan_amount: amount || null,
+    loan_installments: installments || null,
   })
 }
 
