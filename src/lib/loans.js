@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import { todayJalali } from './format'
+import { todayJalali, formatAmount } from './format'
 import { createNotification } from './notifications'
 
 export const LOAN_LETTER_NOTE = 'لطفا نسخه چاپ شده نامه پیوستی را جهت امضا تحویل دهید'
@@ -18,9 +18,13 @@ export const LOAN_STATUS_LABELS = {
 const ACTIVE_STATUSES = ['awaiting_info', 'awaiting_letter', 'awaiting_signature']
 const RECEIVED_STATUSES = [...ACTIVE_STATUSES, 'completed']
 
-// ماه شمسی جاری به شکل 1405-07
+// ماه درخواست: از ۱۶ هر ماه تا ۱۵ ماه بعد، «درخواست ماه بعد» حساب می‌شود. (مثلاً ۱۶ مهر تا ۱۵ آبان = آبان) خروجی مثل 1405-08
 export function currentLoanMonth() {
-  return todayJalali().replaceAll('/', '-').slice(0, 7)
+  const [y, m, d] = digitsToEnglish(todayJalali()).split(/[/-]/).map(Number)
+  if (d >= 16) {
+    return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
+  }
+  return `${y}-${String(m).padStart(2, '0')}`
 }
 
 export function digitsToEnglish(str) {
@@ -115,8 +119,9 @@ export async function getGoodwillRankMap() {
   return map
 }
 
-// بستن درخواست‌های یک ماه: انتخاب‌شده‌ها به مرحله‌ی تکمیل اطلاعات می‌روند، بقیه رد می‌شوند.
-export async function completeLoanMonth(month, selectedIds) {
+// بستن درخواست‌های یک ماه: انتخاب‌شده‌ها (با مبلغ وام و تعداد قسط مخصوص هرکدام) به مرحله‌ی تکمیل اطلاعات می‌روند، بقیه رد می‌شوند.
+// selections: [{ id, amount, installments }]
+export async function completeLoanMonth(month, selections) {
   const { data: pending, error } = await supabase
     .from('loan_requests')
     .select('id, user_id')
@@ -124,14 +129,16 @@ export async function completeLoanMonth(month, selectedIds) {
     .eq('status', 'pending')
   if (error) return { error }
 
-  const selected = (pending ?? []).filter((r) => selectedIds.includes(r.id))
-  const others = (pending ?? []).filter((r) => !selectedIds.includes(r.id))
+  const byId = new Map(selections.map((s) => [s.id, s]))
+  const selected = (pending ?? []).filter((r) => byId.has(r.id))
+  const others = (pending ?? []).filter((r) => !byId.has(r.id))
 
-  if (selected.length) {
+  for (const r of selected) {
+    const sel = byId.get(r.id)
     const { error: e1 } = await supabase
       .from('loan_requests')
-      .update({ status: 'awaiting_info' })
-      .in('id', selected.map((r) => r.id))
+      .update({ status: 'awaiting_info', loan_amount: sel.amount, loan_installments: sel.installments })
+      .eq('id', r.id)
     if (e1) return { error: e1 }
   }
   if (others.length) {
@@ -143,9 +150,10 @@ export async function completeLoanMonth(month, selectedIds) {
   }
 
   for (const r of selected) {
+    const sel = byId.get(r.id)
     await createNotification(
       r.user_id,
-      '🎉 درخواست وام ۴ درصدی شما پذیرفته شد. لطفا اطلاعات دریافت‌کننده را تکمیل کنید.',
+      `🎉 درخواست وام ۴ درصدی شما به مبلغ ${formatAmount(sel.amount)} تومان در ${sel.installments} قسط پذیرفته شد. لطفا اطلاعات دریافت‌کننده را تکمیل کنید.`,
       '/member/loans'
     )
   }
@@ -191,4 +199,18 @@ export async function addToLoanBlacklist(userId, reason) {
 
 export async function removeFromLoanBlacklist(userId) {
   return supabase.from('loan_blacklist').delete().eq('user_id', userId)
+}
+
+// ثبت سابقه‌ی دریافت وام برای کسانی که قبل از راه‌اندازی این بخش وام گرفته‌اند
+export async function addPastLoan(userId, month, recipientName) {
+  return supabase.from('loan_requests').insert({
+    user_id: userId,
+    month,
+    status: 'completed',
+    recipient_full_name: recipientName || null,
+  })
+}
+
+export async function deleteCompletedLoan(requestId) {
+  return supabase.from('loan_requests').delete().eq('id', requestId).eq('status', 'completed')
 }
