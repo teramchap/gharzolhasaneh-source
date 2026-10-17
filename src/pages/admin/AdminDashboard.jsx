@@ -5,17 +5,20 @@ import { countFunds } from '../../lib/funds'
 import { countMembers } from '../../lib/members'
 import { countPendingReceipts } from '../../lib/receipts'
 import { getUnreadCountsForReader } from '../../lib/messages'
+import { countPendingLoanRequests } from '../../lib/loans'
 export default function AdminDashboard() {
   const { profile, logout } = useAuth()
   const [fundsCount, setFundsCount] = useState(null)
   const [membersCount, setMembersCount] = useState(null)
   const [receiptsCount, setReceiptsCount] = useState(null)
   const [unreadCount, setUnreadCount] = useState(null)
+  const [loansCount, setLoansCount] = useState(null)
 
   useEffect(() => {
     countFunds().then(({ count }) => setFundsCount(count))
     countMembers().then(({ count }) => setMembersCount(count))
     countPendingReceipts().then(({ count }) => setReceiptsCount(count))
+    countPendingLoanRequests().then(setLoansCount)
     if (profile?.id) {
       getUnreadCountsForReader(profile.id).then((counts) =>
         setUnreadCount(Object.values(counts).reduce((a, b) => a + b, 0))
@@ -28,6 +31,7 @@ export default function AdminDashboard() {
     { title: 'قرعه‌کشی', to: '/admin/draw' },
     { title: 'فیش‌های پرداخت‌شده', to: '/admin/receipts', count: receiptsCount },
     { title: 'لیست واریزها', to: '/admin/payments' },
+    { title: 'درخواست‌های وام ۴ درصدی', to: '/admin/loans', count: loansCount },
     { title: 'یادداشت‌ها', to: '/admin/notes' },
     { title: 'پخش زنده', to: '/admin/live' },
     { title: 'برندگان', to: '/admin/winners' },
@@ -129,6 +133,14 @@ function CardIcon({ title, className }) {
       <svg {...common}>
         <rect x="3" y="4" width="18" height="14" rx="2" />
         <path d="M8 21h8M12 18v3" />
+      </svg>
+    )
+  if (title === 'درخواست‌های وام ۴ درصدی')
+    return (
+      <svg {...common}>
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M6 12h.01M18 12h.01" />
       </svg>
     )
   if (title === 'لیست واریزها')
