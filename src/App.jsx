@@ -23,6 +23,9 @@ import MemberPaymentHistoryPage from './pages/member/MemberPaymentHistoryPage'
 import PaymentsListPage from './pages/admin/PaymentsListPage'
 import NotesPage from './pages/admin/NotesPage'
 import LiveStreamPage from './pages/admin/LiveStreamPage'
+import LoanRequestPage from './pages/member/LoanRequestPage'
+import LoanRequestPage from './pages/member/LoanRequestPage'
+import LoansAdminPage from './pages/admin/LoansAdminPage'
 export default function App() {
   return (
     <BrowserRouter>
@@ -203,6 +206,23 @@ export default function App() {
             element={
               <ProtectedRoute role="admin">
                 <LiveStreamPage />
+              </ProtectedRoute>
+            }
+          />
+
+                    <Route
+            path="/admin/loans"
+            element={
+              <ProtectedRoute role="admin">
+                <LoansAdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/member/loans"
+            element={
+              <ProtectedRoute role="member">
+                <LoanRequestPage />
               </ProtectedRoute>
             }
           />
