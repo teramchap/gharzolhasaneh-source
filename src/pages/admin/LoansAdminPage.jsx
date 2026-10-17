@@ -100,6 +100,15 @@ export default function LoansAdminPage() {
   )
 }
 
+function loanAmountText(h) {
+  if (!h.loan_amount) return ''
+  return ` — ${formatAmount(h.loan_amount)} تومان${h.loan_installments ? ` (${h.loan_installments} قسط)` : ''}`
+}
+
+function loanTotal(list) {
+  return list.reduce((sum, h) => sum + Number(h.loan_amount || 0), 0)
+}
+
 function rankLabel(info) {
   if (!info) return 'بدون امتیاز'
   return `رتبه ${info.rank} از ${info.total}`
@@ -135,7 +144,6 @@ function RequestsTab({ pending, rankMap, onDone }) {
 
   async function handleComplete() {
     setError('')
-    if (selectedIds.length === 0) return setError('حداقل یک درخواست را انتخاب کنید.')
     for (const id of selectedIds) {
       const t = terms[id] ?? {}
       if (!(Number(t.amount) > 0) || !(Number(t.installments) > 0)) {
@@ -144,7 +152,9 @@ function RequestsTab({ pending, rankMap, onDone }) {
     }
     if (
       !confirm(
-        `${selectedIds.length} نفر انتخاب شده‌اند. با تکمیل، درخواست‌های این ماه بسته می‌شود و برای بقیه نتیجه‌ی «پذیرفته نشد» ثبت می‌شود. ادامه می‌دهید؟`
+        selectedIds.length === 0
+          ? 'هیچ درخواستی انتخاب نشده است. با تکمیل، همه‌ی درخواست‌های این ماه بسته می‌شود و برای همه نتیجه‌ی «پذیرفته نشد» ثبت می‌شود. ادامه می‌دهید؟'
+          : `${selectedIds.length} نفر انتخاب شده‌اند. با تکمیل، درخواست‌های این ماه بسته می‌شود و برای بقیه نتیجه‌ی «پذیرفته نشد» ثبت می‌شود. ادامه می‌دهید؟`
       )
     )
       return
@@ -234,10 +244,16 @@ function RequestsTab({ pending, rankMap, onDone }) {
                     <span className="text-brand-purple-900">
                       {jalaliMonthLabel(h.month)}
                       {h.recipient_full_name ? ` — ${h.recipient_full_name}` : ''}
+                      {loanAmountText(h)}
                     </span>
                     <span className="text-brand-purple-900/70">{LOAN_STATUS_LABELS[h.status]}</span>
                   </div>
                 ))
+              )}
+              {loanTotal(history) > 0 && (
+                <p className="pt-1 text-xs font-bold text-brand-purple-900">
+                  مجموع مبالغ: <span className="tnum">{formatAmount(loanTotal(history))}</span> تومان
+                </p>
               )}
             </div>
           )}
@@ -436,6 +452,8 @@ function PastLoansTab() {
   const [year, setYear] = useState(thisYear)
   const [monthNum, setMonthNum] = useState('01')
   const [name, setName] = useState('')
+  const [amount, setAmount] = useState('')
+  const [instCount, setInstCount] = useState('')
   const [history, setHistory] = useState([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -470,10 +488,18 @@ function PastLoansTab() {
     if (!member) return
     setBusy(true)
     setMessage('')
-    const { error } = await addPastLoan(member.id, `${year}-${monthNum}`, name.trim())
+    const { error } = await addPastLoan(
+      member.id,
+      `${year}-${monthNum}`,
+      name.trim(),
+      Number(amount) || null,
+      Number(instCount) || null
+    )
     setBusy(false)
     if (error) return setMessage('ثبت نشد. ممکن است برای این عضو در همین ماه قبلاً سابقه یا درخواست ثبت شده باشد.')
     setName('')
+    setAmount('')
+    setInstCount('')
     setMessage('سابقه ثبت شد.')
     loadHistory(member.id)
   }
@@ -538,6 +564,26 @@ function PastLoansTab() {
                 ))}
               </select>
             </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-brand-purple-900">مبلغ وام (تومان)</label>
+                <AmountInput
+                  value={amount}
+                  onChange={setAmount}
+                  className="w-full rounded-lg border border-gray-200 px-2 py-2 text-right text-sm outline-none focus:border-brand-purple-700"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold text-brand-purple-900">تعداد قسط (اختیاری)</label>
+                <input
+                  value={instCount}
+                  onChange={(e) => setInstCount(digitsToEnglish(e.target.value).replace(/\D/g, '').slice(0, 3))}
+                  inputMode="numeric"
+                  dir="ltr"
+                  className="w-full rounded-lg border border-gray-200 px-2 py-2 text-right text-sm outline-none focus:border-brand-purple-700"
+                />
+              </div>
+            </div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -564,7 +610,8 @@ function PastLoansTab() {
             <div key={h.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs shadow-sm">
               <span className="text-brand-purple-900">
                 {jalaliMonthLabel(h.month)}
-                {h.recipient_full_name ? ` — ${h.recipient_full_name}` : ''} ({LOAN_STATUS_LABELS[h.status]})
+                {h.recipient_full_name ? ` — ${h.recipient_full_name}` : ''}
+                {loanAmountText(h)} ({LOAN_STATUS_LABELS[h.status]})
               </span>
               {h.status === 'completed' && (
                 <button onClick={() => handleDelete(h.id)} className="font-semibold text-brand-red-600">
@@ -573,6 +620,11 @@ function PastLoansTab() {
               )}
             </div>
           ))}
+          {loanTotal(history) > 0 && (
+            <p className="pt-1 text-xs font-bold text-brand-purple-900">
+              مجموع مبالغ: <span className="tnum">{formatAmount(loanTotal(history))}</span> تومان
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -585,4 +637,4 @@ function BackIcon(props) {
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
-}
+      }
