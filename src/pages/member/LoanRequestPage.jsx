@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
   currentLoanMonth,
-  isLoanBlacklisted,
+  getMyLoanBlacklistEntry,
   getMyLoanRequests,
   submitLoanRequest,
   submitLoanRecipientInfo,
@@ -17,14 +17,14 @@ import { jalaliMonthLabel, formatAmount } from '../../lib/format'
 export default function LoanRequestPage() {
   const { profile } = useAuth()
   const [requests, setRequests] = useState([])
-  const [blacklisted, setBlacklisted] = useState(false)
+  const [blacklisted, setBlacklisted] = useState(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   async function refresh() {
     if (!profile?.id) return
-    const [{ data }, bl] = await Promise.all([getMyLoanRequests(profile.id), isLoanBlacklisted(profile.id)])
+    const [{ data }, bl] = await Promise.all([getMyLoanRequests(profile.id), getMyLoanBlacklistEntry(profile.id)])
     setRequests(data ?? [])
     setBlacklisted(bl)
     setLoading(false)
@@ -64,9 +64,14 @@ export default function LoanRequestPage() {
             {!hasThisMonth && (
               <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-brand-purple-900/5">
                 {blacklisted ? (
-                  <p className="text-sm text-brand-purple-900/70">
-                    در حال حاضر امکان ثبت درخواست وام ۴ درصدی برای شما فعال نیست.
-                  </p>
+                  <div className="space-y-2 text-sm text-brand-purple-900/70">
+                    <p>در حال حاضر امکان ثبت درخواست وام ۴ درصدی برای شما فعال نیست.</p>
+                    {blacklisted.reason && (
+                      <p className="rounded-lg bg-brand-red-100 px-3 py-2 text-brand-red-600">
+                        دلیل: {blacklisted.reason}
+                      </p>
+                    )}
+                  </div>
                 ) : (
                   <>
                     <p className="mb-3 text-sm text-brand-purple-900/70">
