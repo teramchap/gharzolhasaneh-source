@@ -12,7 +12,7 @@ import {
   LOAN_REJECT_MESSAGE,
   LOAN_STATUS_LABELS,
 } from '../../lib/loans'
-import { jalaliMonthLabel } from '../../lib/format'
+import { jalaliMonthLabel, formatAmount } from '../../lib/format'
 
 export default function LoanRequestPage() {
   const { profile } = useAuth()
@@ -70,7 +70,7 @@ export default function LoanRequestPage() {
                 ) : (
                   <>
                     <p className="mb-3 text-sm text-brand-purple-900/70">
-                      هر عضو در هر ماه فقط یک بار می‌تواند درخواست وام ۴ درصدی ثبت کند.
+                      هر عضو در هر ماه فقط یک بار می‌تواند درخواست وام ۴ درصدی ثبت کند. درخواست‌هایی که از ۱۶ هر ماه تا ۱۵ ماه بعد ثبت شوند، مربوط به ماه بعد حساب می‌شوند.
                     </p>
                     {error && <p className="mb-2 text-xs text-brand-red-600">{error}</p>}
                     <button
@@ -124,6 +124,13 @@ function RequestCard({ request, onDone }) {
           {LOAN_STATUS_LABELS[s]}
         </span>
       </div>
+
+      {request.loan_amount && s !== 'pending' && s !== 'rejected' && (
+        <p className="mb-2 rounded-lg bg-brand-purple-100 px-3 py-2 text-sm font-semibold text-brand-purple-900">
+          مبلغ وام: <span className="tnum">{formatAmount(request.loan_amount)}</span> تومان — در{' '}
+          <span className="tnum">{request.loan_installments}</span> قسط
+        </p>
+      )}
 
       {s === 'pending' && (
         <p className="text-sm text-brand-purple-900/70">درخواست شما ثبت شد و در انتظار بررسی مدیر است.</p>
@@ -189,6 +196,16 @@ function RequestCard({ request, onDone }) {
                   مشاهده و دریافت نامه
                 </a>
               )}
+              <div className="rounded-lg bg-brand-purple-100 px-3 py-3 text-xs leading-6 text-brand-purple-900">
+                <p>
+                  جهت دریافت وام پس از امضای نامه به آدرس زیر مراجعه نموده و پس از افتتاح حساب، با ارائه نامه نسبت به
+                  درخواست وام اقدام نمایید:
+                </p>
+                <p className="mt-1">
+                  آدرس: اصفهان - خیابان جی - خ خواجه عمید - نبش چهار راه آذر بهرام - قرض الحسنه حضرت ابوالفضل (ع)
+                </p>
+                <p className="mt-1">تلفن: ۱ - 03132322670</p>
+              </div>
             </>
           )}
 
