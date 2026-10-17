@@ -7,6 +7,7 @@ import { jalaliMonthLabel } from '../../lib/format'
 import { getMyNotifications, getUnreadCount, markNotificationRead, markAllNotificationsRead } from '../../lib/notifications'
 import { getLiveStream } from '../../lib/liveStream'
 import { getMemberUnreadCount } from '../../lib/messages'
+import LoanBanner from '../../components/LoanBanner'
 
 const MEMBER_STAGE_MESSAGE = {
   awaiting_guarantee_type: 'در انتظار بررسی توسط مدیر',
@@ -22,6 +23,7 @@ const cards = [
   { title: 'سهم‌های من', to: '/member/shares' },
   { title: 'پرداخت قسط', to: '/member/receipts' },
   { title: 'سوابق پرداخت', to: '/member/payment-history' },
+  { title: 'درخواست وام ۴ درصدی', to: '/member/loans' },
   { title: 'گفتگو با مدیر', to: '/member/chat' },
   { title: 'تغییر رمز عبور', to: '/member/change-password' },
 ]
@@ -150,6 +152,8 @@ export default function MemberDashboard() {
           </Link>
         ))}
 
+        <LoanBanner userId={profile?.id} />
+
         <div className="mt-3 grid grid-cols-3 gap-2">
           {cards.map((c) => (
             <Link
@@ -213,6 +217,14 @@ function CardIcon({ title, className }) {
       <svg {...common}>
         <path d="M3 3v18h18" />
         <path d="M7 15l4-4 3 3 5-6" />
+      </svg>
+    )
+  if (title === 'درخواست وام ۴ درصدی')
+    return (
+      <svg {...common}>
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+        <circle cx="12" cy="12" r="2.5" />
+        <path d="M6 12h.01M18 12h.01" />
       </svg>
     )
   if (title === 'گفتگو با مدیر')
