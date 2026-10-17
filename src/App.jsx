@@ -24,8 +24,8 @@ import PaymentsListPage from './pages/admin/PaymentsListPage'
 import NotesPage from './pages/admin/NotesPage'
 import LiveStreamPage from './pages/admin/LiveStreamPage'
 import LoanRequestPage from './pages/member/LoanRequestPage'
-import LoanRequestPage from './pages/member/LoanRequestPage'
 import LoansAdminPage from './pages/admin/LoansAdminPage'
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -40,7 +40,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/admin"
             element={
@@ -185,7 +185,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-                    <Route
+          <Route
             path="/admin/payments"
             element={
               <ProtectedRoute role="admin">
@@ -201,7 +201,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-              <Route
+          <Route
             path="/admin/live"
             element={
               <ProtectedRoute role="admin">
@@ -209,8 +209,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-                    <Route
+          <Route
             path="/admin/loans"
             element={
               <ProtectedRoute role="admin">
