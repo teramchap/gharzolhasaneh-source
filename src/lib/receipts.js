@@ -89,6 +89,37 @@ function safeFileExtension(filename) {
   return match ? match[1].toLowerCase() : 'jpg'
 }
 
+// عکس‌های گوشی معمولاً چند مگابایتی‌اند و روی اینترنت ضعیف آپلودشان نیمه‌کاره می‌ماند.
+// قبل از آپلود، عکس را به حداکثر ۱۶۰۰ پیکسل و JPEG کوچک می‌کنیم (اگر نشد، همان فایل اصلی).
+async function shrinkImage(file, maxSide = 1600, quality = 0.8) {
+  try {
+    if (!file.type || !file.type.startsWith('image/')) return file
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+    canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
+    if (!blob || blob.size >= file.size) return file
+    return new File([blob], 'receipt.jpg', { type: 'image/jpeg' })
+  } catch {
+    return file
+  }
+}
+
+// آپلود با تلاش مجدد (تا ۳ بار) برای اینترنت ناپایدار
+async function uploadWithRetry(path, file, tries = 3) {
+  let lastError = null
+  for (let i = 0; i < tries; i++) {
+    const { error } = await supabase.storage.from('receipts').upload(path, file)
+    if (!error) return { error: null }
+    lastError = error
+    await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)))
+  }
+  return { error: lastError }
+}
+
 export async function submitReceipt({ userId, totalAmount, images, allocations, hasImage, depositDateJalali, cardLast4 }) {
   const { data: receipt, error } = await supabase
     .from('receipts')
@@ -108,20 +139,24 @@ export async function submitReceipt({ userId, totalAmount, images, allocations, 
 
   if (hasImage) {
     const uploadErrors = []
-    for (const file of images) {
+    let uploaded = 0
+    for (const original of images) {
+      const file = await shrinkImage(original)
       const ext = safeFileExtension(file.name)
       const path = `${userId}/${receipt.id}/${crypto.randomUUID()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('receipts').upload(path, file)
+      const { error: upErr } = await uploadWithRetry(path, file)
       if (!upErr) {
         await supabase.from('receipt_images').insert({ receipt_id: receipt.id, storage_path: path })
+        uploaded++
       } else {
         uploadErrors.push(upErr)
       }
     }
-    // If every single image failed to upload, surface that clearly instead
-    // of silently leaving a receipt with has_image=true and no images.
-    if (uploadErrors.length > 0 && uploadErrors.length === images.length) {
-      return { data: receipt, error: uploadErrors[0] }
+    // اگر هیچ عکسی آپلود نشد، فیش بدون‌عکس نباید در صف مدیر بماند: حذفش می‌کنیم
+    // و به عضو خطا نشان می‌دهیم تا دوباره بفرستد.
+    if (uploaded === 0) {
+      await supabase.from('receipts').delete().eq('id', receipt.id)
+      return { data: null, error: uploadErrors[0] ?? new Error('upload failed') }
     }
   } else {
     // Generate and store the replacement image for a payment submitted
