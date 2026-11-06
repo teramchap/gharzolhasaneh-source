@@ -175,6 +175,10 @@ function RequestsTab({ pending, rankMap, onDone }) {
 
   return (
     <div className="space-y-3">
+      <p className="text-sm font-bold text-brand-purple-900">
+        درخواست‌های ماه {jalaliMonthLabel(activeMonth)} ({list.length} درخواست)
+      </p>
+
       {months.length > 1 && (
         <select
           value={activeMonth}
@@ -203,6 +207,10 @@ function RequestsTab({ pending, rankMap, onDone }) {
               {rankLabel(rankMap[r.user_id])}
             </span>
           </div>
+
+          <p className="mt-1 text-[11px] text-brand-purple-900/50">
+            ثبت‌شده در {new Date(r.created_at).toLocaleDateString('fa-IR')}
+          </p>
 
           {selected[r.id] && (
             <div className="mt-2 grid grid-cols-2 gap-2">
@@ -637,4 +645,4 @@ function BackIcon(props) {
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
-      }
+                             }
