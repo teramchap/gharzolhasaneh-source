@@ -8,9 +8,22 @@ const STATUS_LABEL = {
   awaiting_documents: 'در انتظار ارائه مدارک',
   awaiting_document_approval: 'در انتظار تایید مدارک',
   awaiting_account_info: 'در انتظار اطلاعات حساب',
+  awaiting_account_info_approval: 'در انتظار تایید اطلاعات حساب',
   awaiting_deposit: 'در انتظار واریز مبلغ',
   awaiting_deposit_confirmation: 'در انتظار تایید واریز',
   completed: 'تکمیل (پرداخت‌شده)',
+}
+
+// جدیدترین ماه بالا؛ تو هر ماه، به ترتیب نام صندوق
+function sortWinners(list) {
+  return [...list].sort((a, b) => {
+    const am = a.fund_months?.jalali_month ?? ''
+    const bm = b.fund_months?.jalali_month ?? ''
+    if (am !== bm) return bm.localeCompare(am)
+    const af = a.fund_months?.funds?.name ?? ''
+    const bf = b.fund_months?.funds?.name ?? ''
+    return af.localeCompare(bf, 'fa')
+  })
 }
 
 export default function WinnersPage() {
@@ -20,7 +33,7 @@ export default function WinnersPage() {
 
   useEffect(() => {
     listAllWinners().then(({ data }) => {
-      setWinners(data ?? [])
+      setWinners(sortWinners(data ?? []))
       setLoading(false)
     })
   }, [])
